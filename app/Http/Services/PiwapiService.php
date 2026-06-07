@@ -3,6 +3,7 @@
 namespace App\Http\Services;
 
 use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Storage;
 use App\Helper;
 use Illuminate\Support\Facades\Log;
 
@@ -84,6 +85,46 @@ class PiwapiService
                 "success" => false,
                 "message" => "Recipient or message is empty, skipping send."
             ];
+        }
+
+        // Local development helper: if the file URL points to localhost or 127.0.0.1, upload to tmpfiles.org
+        if (isset($this->parameters['document_url'])) {
+            $pdfUrl = $this->parameters['document_url'];
+            if (str_contains($pdfUrl, 'localhost') || str_contains($pdfUrl, '127.0.0.1')) {
+                Log::info("PiwapiService: Local URL detected in document: {$pdfUrl}. Uploading to tmpfiles.org for external access.");
+                try {
+                    $parsedUrl = parse_url($pdfUrl);
+                    $path = isset($parsedUrl['path']) ? urldecode($parsedUrl['path']) : '';
+                    
+                    // Convert "/storage/slips/slip-X.pdf" to "slips/slip-X.pdf"
+                    $storagePath = preg_replace('/^\/storage\//', '', $path);
+                    
+                    if (Storage::disk('public')->exists($storagePath)) {
+                        $fileContents = Storage::disk('public')->get($storagePath);
+                        $fileName = basename($storagePath);
+                        
+                        $uploadResponse = Http::attach(
+                            'file',
+                            $fileContents,
+                            $fileName
+                        )->post('https://tmpfiles.org/api/v1/upload');
+                        
+                        if ($uploadResponse->successful()) {
+                            $tempUrl = $uploadResponse->json('data.url');
+                            if ($tempUrl) {
+                                $this->parameters['document_url'] = str_replace('https://tmpfiles.org/', 'https://tmpfiles.org/dl/', $tempUrl);
+                                Log::info("PiwapiService: Successfully uploaded to tmpfiles.org. Public URL: " . $this->parameters['document_url']);
+                            }
+                        } else {
+                            Log::error("PiwapiService: Failed to upload to tmpfiles.org. Status: " . $uploadResponse->status() . " Body: " . $uploadResponse->body());
+                        }
+                    } else {
+                        Log::warning("PiwapiService: Could not locate file locally in public storage for path: {$storagePath}");
+                    }
+                } catch (\Exception $e) {
+                    Log::error("PiwapiService: Exception uploading local document to tmpfiles.org: " . $e->getMessage());
+                }
+            }
         }
 
         $url = "https://piwapi.com/api/send/whatsapp";
