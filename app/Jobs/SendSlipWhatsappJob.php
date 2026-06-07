@@ -18,18 +18,17 @@ class SendSlipWhatsappJob implements ShouldQueue
     use Dispatchable, InteractsWithQueue, Queueable, SerializesModels;
 
     protected $slip;
+    protected $pdfUrl;
 
     /**
      * Create a new job instance.
      */
-    public function __construct(Slip $slip)
+    public function __construct(Slip $slip, string $pdfUrl)
     {
         $this->slip = $slip;
+        $this->pdfUrl = $pdfUrl;
     }
 
-    /**
-     * Execute the job.
-     */
     public function handle(): void
     {
         $this->slip->loadMissing('karyawan');
@@ -40,23 +39,6 @@ class SendSlipWhatsappJob implements ShouldQueue
         }
 
         try {
-            // Ensure slips directory exists in public storage
-            if (!Storage::disk('public')->exists('slips')) {
-                Storage::disk('public')->makeDirectory('slips');
-            }
-
-            // Generate individual PDF using dompdf
-            $pdf = Pdf::loadView('pdf.slip_individual', ['slip' => $this->slip]);
-            
-            $fileName = 'slip-' . $this->slip->id . '-' . time() . '.pdf';
-            $filePath = 'slips/' . $fileName;
-
-            // Save PDF to public storage disk
-            Storage::disk('public')->put($filePath, $pdf->output());
-
-            // Get absolute public asset URL for Piwapi to fetch
-            $pdfUrl = url('/storage/' . $filePath);
-
             // Format period nicely
             $periodFormatted = '';
             try {
@@ -78,10 +60,10 @@ class SendSlipWhatsappJob implements ShouldQueue
             ])
             ->setRecipient($this->slip->karyawan->phone)
             ->message($messageTemplate)
-            ->document($pdfUrl, 'pdf')
+            ->document($this->pdfUrl, 'pdf')
             ->send();
 
-            Log::info("WhatsApp Slip Sent to Karyawan phone {$this->slip->karyawan->phone} (Slip ID: {$this->slip->id}). Piwapi Response: " . json_encode($response) . " | URL: {$pdfUrl}");
+            Log::info("WhatsApp Slip Sent to Karyawan phone {$this->slip->karyawan->phone} (Slip ID: {$this->slip->id}). Piwapi Response: " . json_encode($response) . " | URL: {$this->pdfUrl}");
 
         } catch (\Exception $e) {
             Log::error("Failed to process WhatsApp Slip Delivery for Slip ID {$this->slip->id}. Error: " . $e->getMessage());

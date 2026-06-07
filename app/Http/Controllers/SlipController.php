@@ -10,6 +10,7 @@ use Inertia\Inertia;
 use Inertia\Response;
 use Illuminate\Http\RedirectResponse;
 use Barryvdh\DomPDF\Facade\Pdf;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\Http\Response as LaravelResponse;
 
 class SlipController extends Controller
@@ -87,12 +88,29 @@ class SlipController extends Controller
                 'paid_by' => $paidBy,
             ]);
 
+            // Ensure slips directory exists in public storage
+            if (!Storage::disk('public')->exists('slips')) {
+                Storage::disk('public')->makeDirectory('slips');
+            }
+
+            // Generate individual PDF using dompdf
+            $pdf = Pdf::loadView('pdf.slip_individual', ['slip' => $slip]);
+            
+            $fileName = 'slip-' . $slip->id . '-' . time() . '.pdf';
+            $filePath = 'slips/' . $fileName;
+
+            // Save PDF to public storage disk
+            Storage::disk('public')->put($filePath, $pdf->output());
+
+            // Get absolute public asset URL for Piwapi to fetch
+            $pdfUrl = url('/storage/' . $filePath);
+
             if ($isMultiple) {
                 // If multiple paid, use background queue to send WhatsApp
-                \App\Jobs\SendSlipWhatsappJob::dispatch($slip);
+                \App\Jobs\SendSlipWhatsappJob::dispatch($slip, $pdfUrl);
             } else {
                 // For single paid, process synchronously/instantly
-                \App\Jobs\SendSlipWhatsappJob::dispatchSync($slip);
+                \App\Jobs\SendSlipWhatsappJob::dispatchSync($slip, $pdfUrl);
             }
         }
 
