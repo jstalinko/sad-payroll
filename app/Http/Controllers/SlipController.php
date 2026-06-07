@@ -101,17 +101,19 @@ class SlipController extends Controller
 
             // Save PDF to public storage disk
             Storage::disk('public')->put($filePath, $pdf->output());
+            sleep(1);
 
             // Get absolute public asset URL for Piwapi to fetch
             $pdfUrl = url('/storage/' . $filePath);
 
-            if ($isMultiple) {
-                // If multiple paid, use background queue to send WhatsApp
                 \App\Jobs\SendSlipWhatsappJob::dispatch($slip, $pdfUrl);
-            } else {
-                // For single paid, process synchronously/instantly
-                \App\Jobs\SendSlipWhatsappJob::dispatchSync($slip, $pdfUrl);
-            }
+
+            // if ($isMultiple) {
+            //     // If multiple paid, use background queue to send WhatsApp
+            // } else {
+            //     // For single paid, process synchronously/instantly
+            //     \App\Jobs\SendSlipWhatsappJob::dispatchSync($slip, $pdfUrl);
+            // }
         }
 
         return redirect()->back()->with('success', 'Slips marked as PAID successfully.');
