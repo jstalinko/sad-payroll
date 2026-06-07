@@ -90,7 +90,7 @@ class PiwapiService
         // Local development helper: if the file URL points to localhost or 127.0.0.1, upload to tmpfiles.org
         if (isset($this->parameters['document_url'])) {
             $pdfUrl = $this->parameters['document_url'];
-            if (str_contains($pdfUrl, 'localhost') || str_contains($pdfUrl, '127.0.0.1')) {
+            if (env('TMPFILES_UPLOAD_PDF', false)) {
                 Log::info("PiwapiService: Local URL detected in document: {$pdfUrl}. Uploading to tmpfiles.org for external access.");
                 try {
                     $parsedUrl = parse_url($pdfUrl);
