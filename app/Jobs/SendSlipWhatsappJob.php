@@ -81,7 +81,7 @@ class SendSlipWhatsappJob implements ShouldQueue
             ->document($pdfUrl, 'pdf')
             ->send();
 
-            Log::info("WhatsApp Slip Sent to Karyawan phone {$this->slip->karyawan->phone} (Slip ID: {$this->slip->id}). Piwapi Response: " . json_encode($response));
+            Log::info("WhatsApp Slip Sent to Karyawan phone {$this->slip->karyawan->phone} (Slip ID: {$this->slip->id}). Piwapi Response: " . json_encode($response) . " | URL: {$pdfUrl}");
 
         } catch (\Exception $e) {
             Log::error("Failed to process WhatsApp Slip Delivery for Slip ID {$this->slip->id}. Error: " . $e->getMessage());
