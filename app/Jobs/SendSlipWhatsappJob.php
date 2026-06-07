@@ -55,7 +55,7 @@ class SendSlipWhatsappJob implements ShouldQueue
             Storage::disk('public')->put($filePath, $pdf->output());
 
             // Get absolute public asset URL for Piwapi to fetch
-            $pdfUrl = asset('storage/' . $filePath);
+            $pdfUrl = url('/storage/' . $filePath);
 
             // Format period nicely
             $periodFormatted = '';

@@ -154,7 +154,7 @@
     <div class="container">
         <div class="header">
             <h1>PT SINAR ARTA DIGITAL</h1>
-            <div class="subtitle">Premium Digital Solution Services &middot; Jakarta, Indonesia</div>
+          
             <div class="doc-title">SLIP GAJI KARYAWAN</div>
         </div>
 
@@ -295,10 +295,10 @@
                     <div style="font-weight: bold; text-decoration: underline;">{{ $slip->karyawan->name }}</div>
                 </td>
                 <td>
-                    <div>Jakarta, {{ \Carbon\Carbon::parse($slip->paid_at ?? now())->format('d F Y') }}</div>
+                    <div>Kudus, {{ \Carbon\Carbon::parse($slip->paid_at ?? now())->format('d F Y') }}</div>
                     <div>PT Sinar Arta Digital,</div>
                     <div class="signature-space"></div>
-                    <div style="font-weight: bold; text-decoration: underline;">{{ $slip->paid_by ?? 'HRD Admin' }}</div>
+                    <div style="font-weight: bold; text-decoration: underline;">HAIDAR WIBOWO RAHARDJO, S.M.</div>
                 </td>
             </tr>
         </table>
